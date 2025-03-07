@@ -1,41 +1,49 @@
+let pets = [];
 // load all category button 
 const loadAllCategory = () => {
-    fetch("https://openapi.programming-hero.com/api/peddy/categories")
-        .then(res => res.json())
-        .then(data => displayAllCategory(data.categories))
-      }
+  fetch("https://openapi.programming-hero.com/api/peddy/categories")
+    .then(res => res.json())
+    .then(data => displayAllCategory(data.categories))
+}
 // display all category button 
 const displayAllCategory = (categories) => {
 
-    categories.forEach(category => {
-        const categoryContainer = document.getElementById("category-container");
-        const span = document.createElement("span");
-        span.classList = "btn btn-outline rounded-full px-8 bg-amber-50 border-amber-200 text-amber-800";
-        span.innerHTML = `
+  categories.forEach(category => {
+    const categoryContainer = document.getElementById("category-container");
+    const span = document.createElement("span");
+    span.classList = "btn btn-outline rounded-full px-8 bg-amber-50 border-amber-200 text-amber-800";
+    span.innerHTML = `
         <img class="h-6 w-6" src="${category.category_icon}">${category.category}
         `
-        span.onclick = () => loadCategory(category.category)
-        categoryContainer.append(span)
+    span.onclick = () => loadCategory(category.category)
+    categoryContainer.append(span)
 
-    })
+  })
 }
 // load category handler
 const loadCategory = (category) => {
-    // console.log(`Loading category: ${categoryName}`);
-    fetch(`https://openapi.programming-hero.com/api/peddy/category/${category}`)
+  const spinner = document.getElementById("spinner");
+  const petContainer = document.getElementById("pet-container");
+  spinner.style.display = "block";
+  petContainer.innerHTML = '';
+
+  fetch(`https://openapi.programming-hero.com/api/peddy/category/${category}`)
     .then(res => res.json())
-    .then(data => handelCategory(data.data))
+    .then(data => setTimeout(() => {
+      spinner.style.display = "none";
+      handelCategory(data.data)
+    }, 2000))
 }
 const handelCategory = (pets) => {
-    const petContainer = document.getElementById("pet-container");
-    petContainer.innerHTML = '';
+  const petContainer = document.getElementById("pet-container");
+  petContainer.innerHTML = '';
 
-        if(pets.length > 0){
-            petContainer.classList.add("grid", "grid-cols-1", "md:grid-cols-3");
-            displayAllPets(pets);
-        }else{
-            petContainer.classList.remove("grid", "grid-cols-1", "md:grid-cols-3");
-            petContainer.innerHTML = `
+  if (pets.length > 0) {
+    petContainer.classList.add("grid", "grid-cols-1", "md:grid-cols-3");
+    displayAllPets(pets);
+  } else {
+    petContainer.classList.remove("grid", "grid-cols-1", "md:grid-cols-3");
+    petContainer.innerHTML = `
             <div class="text-center">
                 <img class="mx-auto" src="../images/error.webp" />
                 <h2 class="text-2xl font-medium">No Information Available</h2>
@@ -44,33 +52,41 @@ its layout. The point of using Lorem Ipsum is that it has a.</p>
             </div>
             
             `
-        } 
-        // document.getElementById("spinner").style.display = "block"
-
-        // setTimeout(function () {
-        //     displayAllPets(pets);
-        // }, 2000)
-  
+  }
 };
 
 // / load all pets  
 const loadAllPets = () => {
 
-    fetch("https://openapi.programming-hero.com/api/peddy/pets")
-        .then(res => res.json())
-        .then(data => displayAllPets(data.pets))
-        .catch(err => console.log(err))
-        
- 
+  const spinner = document.getElementById("spinner");
+  const petContainer = document.getElementById("pet-container");
+  spinner.style.display = "block";
+  petContainer.innerHTML = '';
+
+  fetch("https://openapi.programming-hero.com/api/peddy/pets")
+    .then(res => res.json())
+    .then(data => setTimeout(() => {
+      spinner.style.display = "none";
+      pets = data.pets;
+      displayAllPets(pets)
+    }, 2000))
+    .catch(err => console.log(err))
+
+
 }
+document.getElementById("sort-btn").addEventListener("click", () => {
+  const sortedPets = [...pets].sort((a, b) => b.price - a.price);
+  displayAllPets(sortedPets);
+});
 const displayAllPets = (pets) => {
-//  document.getElementById("spinner").style.display = "none"
-    const petContainer = document.getElementById("pet-container");
-   
-        pets.forEach(pet => {
-            const { image, pet_name, breed, date_of_birth,petId, gender, price, pet_details, } = pet;
-            const div = document.createElement("div");
-            div.innerHTML = `
+
+  const petContainer = document.getElementById("pet-container");
+  petContainer.innerHTML = '';
+
+  pets.forEach(pet => {
+    const { image, pet_name, breed, date_of_birth, petId, gender, price, pet_details, } = pet;
+    const div = document.createElement("div");
+    div.innerHTML = `
             
               <div class="card bg-base-100 shadow-md">
                 <figure class="h-48">
@@ -90,35 +106,76 @@ const displayAllPets = (pets) => {
                      <button onclick="likeHandler('${image}')" class="like-btn btn btn-sm btn-ghost">
                             <i class="fa-regular fa-thumbs-up"></i><span class="like-count"></span>
                         </button>
-                        <button class="btn btn-sm btn-primary">Adopt</button>
+                        <button onClick="adoptHandler(this)" class="btn btn-sm btn-primary">Adopt</button>
                         <button onClick="handleDetails('${petId}')" class="btn btn-sm btn-ghost">Details</button>
                     </div>
                 </div>
             </div>
             `
-            petContainer.append(div)
-        })
- 
-    
+    petContainer.append(div)
+  })
+
+
 }
-//  like handler
-// Like handler function
-const likeHandler = (image) => {
-    const likedImgContainer = document.getElementById("like-img");
-
-    const img = document.createElement("img");
-    img.src = image;
-    img.classList = "rounded";
-
-    likedImgContainer.appendChild(img);
+// Adopt button handler
+const adoptHandler = (button) => {
+  button.disabled = false; // Disable button to prevent multiple clicks
+  showAdoptModal(button); // Show the modal first
 };
-const handleDetails = async(petId) => {
-    const res =  await fetch(`https://openapi.programming-hero.com/api/peddy/pet/${petId}`)
-    const data = await res.json();
-   const {breed,date_of_birth,price,image,gender,pet_details,vaccinated_status,pet_name} = data.petData;
 
-    const modalContainer = document.getElementById("modal-container");
-    modalContainer.innerHTML = `
+// Function to display adoption confirmation modal with countdown
+const showAdoptModal = (button) => {
+  const modal = document.createElement("dialog");
+  modal.classList.add("modal");
+  modal.innerHTML = `
+    <div class="modal-box text-center">
+      <h3 class="text-lg font-bold"> Adoption in Progress</h3>
+      <p class="py-4 countdown-text text-3xl font-bold"><span id="modal-countdown">3</span></p>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.showModal();
+
+  let countdown = 3;
+  const modalCountdown = document.getElementById("modal-countdown");
+
+  const interval = setInterval(() => {
+    if (countdown > 1) {
+      countdown--;
+      modalCountdown.innerText = countdown; // Update countdown text
+    } else {
+      clearInterval(interval);
+      modal.close(); // Close the modal automatically
+      modal.remove(); // Remove modal from DOM
+      button.innerText = "Adopted"; // Change button text
+      button.classList.add("btn-disabled"); // Disable button permanently
+    }
+  }, 1000);
+};
+
+
+
+{/* <span class="countdown font-mono text-6xl">
+<span style="--value:3;" aria-live="polite" aria-label="3">3</span>
+</span> */}
+//  like handler
+const likeHandler = (image) => {
+  const likedImgContainer = document.getElementById("like-img");
+
+  const img = document.createElement("img");
+  img.src = image;
+  img.classList = "rounded";
+
+  likedImgContainer.appendChild(img);
+};
+const handleDetails = async (petId) => {
+  const res = await fetch(`https://openapi.programming-hero.com/api/peddy/pet/${petId}`)
+  const data = await res.json();
+  const { breed, date_of_birth, price, image, gender, pet_details, vaccinated_status, pet_name } = data.petData;
+
+  const modalContainer = document.getElementById("modal-container");
+  modalContainer.innerHTML = `
 <dialog id="my_modal_1" class="modal">
   <div class="modal-box w-full max-w-lg">
     <div class="relative">
@@ -148,7 +205,7 @@ const handleDetails = async(petId) => {
   </div>
 </dialog>
     `
-    my_modal_1.showModal();
+  my_modal_1.showModal();
 
 }
 loadAllCategory();
